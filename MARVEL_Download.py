@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from urllib2 import urlopen
+from urllib.request import urlopen, Request
 from PIL import Image
 import traceback
 import threading
@@ -14,7 +14,7 @@ import os
 FILE_TO_DOWNLOAD_FROM = "VesselClassification.dat"
 ##FILE_TO_DOWNLOAD_FROM = "IMOTrainAndTest.dat" 
 
-NUMBER_OF_WORKERS = 10
+NUMBER_OF_WORKERS = 200
 MAX_NUM_OF_FILES_IN_FOLDER = 5000
 IMAGE_HEIGHT = 256
 IMAGE_WIDTH = 256
@@ -35,9 +35,10 @@ sourceLink = "http://www.shipspotting.com/gallery/photo.php?lid="
 logging.basicConfig(level=logging.DEBUG, format='(%(threadName)-10s) %(message)s', )
 logging.debug("Process started at " + str(datetime.datetime.now()))
 
+
 def save_image(ID,justImage,outFolder):
     url = sourceLink + ID
-    html = urlopen(url,timeout = 300).read()
+    html = urlopen(Request(url, headers={'User-Agent': 'Mozilla/5.0'}), timeout = 300).read()
     soup = BeautifulSoup(html,"lxml")
 
     images = [img for img in soup.findAll('img')]
@@ -45,18 +46,19 @@ def save_image(ID,justImage,outFolder):
     if not justImage:
         tags = [tr for tr in soup.findAll('td')]
         tr_text = [each.getText() for each in tags]
-        
+
     filename = " "
     for each in image_links:
         if "http" in each and "jpg" in each and "photos/middle" in each:
             filename=each.split('/')[-1]
-            f = urlopen(each)
+            f = urlopen(Request(each, headers={'User-Agent': 'Mozilla/5.0'}))
             with open(os.path.join(outFolder,filename), "wb") as local_file:
                 local_file.write(f.read())
             if ORIGINAL_SIZE == 0:
                 img = Image.open(os.path.join(outFolder,filename)).resize((IMAGE_HEIGHT,IMAGE_WIDTH), Image.ANTIALIAS)
                 os.remove(os.path.join(outFolder,filename))
-                out = file(os.path.join(outFolder,filename),"wb")
+                # out = file(os.path.join(outFolder,filename),"wb")
+                out = os.path.join(outFolder, filename)
                 img.save(out,"JPEG")
             break
         
